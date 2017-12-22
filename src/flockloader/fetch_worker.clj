@@ -16,15 +16,12 @@
     (not (== status 200)) {:error (status-error status) :term term}
     :else                 {:ok (parser/extract-links body)}))
 
-(defn spawn [worker-id client options tasks-chan]
-  (let [worker-chan (chan)]
-    (go-loop []
-      (log/debug "Worker #" worker-id "ready to accept tasks")
-      (when-let [{:keys [term resp-chan]} (<! tasks-chan)]
-        (log/debug "Worker #" worker-id "got term" (str "`" term "`"))
-        (http/get
-          (str "https://www.bing.com/search?q=" (encode term) "&format=rss&count=" count)
-          options
-          #(put! worker-chan %))
-        (>! resp-chan (process-result term (<! worker-chan)))
-        (recur)))))
+(defn spawn [worker-id client options tasks-chan results-count]
+  (go-loop []
+    (log/debug "Worker #" worker-id "ready to accept tasks")
+    (when-let [{:keys [term resp-chan]} (<! tasks-chan)]
+      (log/debug "Worker #" worker-id "got term" (str "`" term "`"))
+      (>! resp-chan (process-result term @(http/get
+        (str "https://www.bing.com/search?q=" (encode term) "&format=rss&count=" results-count)
+        options)))
+      (recur))))

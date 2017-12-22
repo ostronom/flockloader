@@ -40,7 +40,7 @@
               (recur 0 results)))))
       output)))
 
-(defn start-fetcher [num-workers timeout]
+(defn start-fetcher [num-workers timeout results-count]
   ;; Starts `globally bounded` fetcher which limits ALL connections to num-workers
   ;; count. There is a possibility to use `locally bounded` fetcher which is
   ;; essentially a `globally bounded` one for each task (set of terms)
@@ -49,7 +49,7 @@
         outer-tasks-chan (chan)
         inner-tasks-chan (chan num-workers)]
     (doseq [worker-id (range 0 num-workers)]
-      (worker/spawn worker-id client options inner-tasks-chan))
+      (worker/spawn worker-id client options inner-tasks-chan results-count))
     (go-loop []
       (when-let [{:keys [terms resp-chan]} (<! outer-tasks-chan)]
         (doseq [term terms]

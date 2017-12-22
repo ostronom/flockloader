@@ -7,10 +7,12 @@
             [compojure.core :refer [defroutes GET]]))
 
 
-(def fetcher (fetch/start-fetcher 10 1500))
+(def default-timeout 1500)
+(def fetcher (fetch/start-fetcher 10 default-timeout 10))
+(def http-timeout (* 2 default-timeout))
 
 (defroutes all-routes
-  (GET "/search" req (h/search fetcher req)))
+  (GET "/search" req (h/search fetcher http-timeout req)))
 
 (defn wrap-request-logging [handler]
   (fn [{:keys [request-method uri] :as req}]
